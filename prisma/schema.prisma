@@ -37,7 +37,7 @@ model AuthorizationCode {
   used         Boolean  @default(false)
   createdAt    DateTime @default(now()) @map("created_at")
 
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
 
   @@map("authorization_codes")
 }
@@ -53,7 +53,7 @@ model Token {
   revoked      Boolean  @default(false)
   createdAt    DateTime @default(now()) @map("created_at")
 
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
 
   @@map("tokens")
 }

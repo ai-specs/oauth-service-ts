@@ -19,17 +19,17 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine AS production
+# Production stage - use debian-slim for better Prisma compatibility
+FROM node:20-slim AS production
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --gid 1001 nodejs
 
 # Copy package files and install production dependencies
 COPY package*.json ./
@@ -58,5 +58,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Start the application
-ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/app.js"]
