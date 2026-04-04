@@ -209,13 +209,14 @@ describe('Validation Utilities', () => {
       code_verifier: z.string()
         .min(43)
         .max(128)
-        .regex /^[A-Za-z0-9\-._~+/]+$/,
+        .regex(/^[A-Za-z0-9\-._~+/]+$/),
       code_challenge_method: z.enum(['plain', 'S256']).default('S256'),
     });
 
     it('should validate valid code_verifier', () => {
+      // PKCE code_verifier must be 43-128 chars, using only A-Za-z0-9-._~+/
       const validPKCE = {
-        code_verifier: 'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-._~',
+        code_verifier: 'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789_-.~+' + 'x'.repeat(3), // 46 chars, valid chars
       };
 
       const result = pkceSchema.safeParse(validPKCE);
