@@ -27,7 +27,7 @@ interface TokenData {
   expiresAt: Date;
 }
 
-interface TokenResponse {
+export interface TokenResponse {
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
@@ -35,7 +35,7 @@ interface TokenResponse {
   scope?: string;
 }
 
-interface IntrospectionResponse {
+export interface IntrospectionResponse {
   active: boolean;
   client_id?: string;
   scope?: string;

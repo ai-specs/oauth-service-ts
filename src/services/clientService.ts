@@ -67,7 +67,7 @@ export const getClient = async (clientId: string): Promise<ClientData | null> =>
   };
 };
 
-export const getClientById = async (id: string): Promise<ClientData | null> {
+export const getClientById = async (id: string): Promise<ClientData | null> => {
   const client = await prisma.client.findUnique({
     where: { id },
   });

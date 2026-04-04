@@ -43,11 +43,13 @@ interface TokenRequestBody {
 interface IntrospectRequestBody {
   token: string;
   token_type_hint?: 'access_token' | 'refresh_token';
+  client_id?: string;
 }
 
 interface RevokeRequestBody {
   token: string;
   token_type_hint?: 'access_token' | 'refresh_token';
+  client_id?: string;
 }
 
 // Extended request with authenticated client
@@ -109,7 +111,7 @@ const getClient = async (clientId: string): Promise<ClientData | null> => {
 };
 
 export const token = async (
-  req: Request<object, TokenResponse, TokenRequestBody>,
+  req: Request,
   res: Response<TokenResponse>,
   next: NextFunction
 ): Promise<void> => {
@@ -191,7 +193,7 @@ export const token = async (
 };
 
 export const introspect = async (
-  req: Request<object, IntrospectionResponse, IntrospectRequestBody>,
+  req: Request,
   res: Response<IntrospectionResponse>,
   next: NextFunction
 ): Promise<void> => {
@@ -231,7 +233,7 @@ export const introspect = async (
 };
 
 export const revoke = async (
-  req: Request<object, void, RevokeRequestBody>,
+  req: Request,
   res: Response<void>,
   next: NextFunction
 ): Promise<void> => {
