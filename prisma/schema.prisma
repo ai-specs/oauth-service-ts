@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id              String   @id @default(uuid())
+  name            String
+  clientId        String   @unique @map("client_id")
+  clientSecretHash String   @map("client_secret_hash")
+  redirectUris    String[] @map("redirect_uris")
+  scopes          String[]
+  isPublic        Boolean  @default(false) @map("is_public")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  authorizationCodes AuthorizationCode[]
+  tokens             Token[]
+
+  @@map("clients")
+}
+
+model AuthorizationCode {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  clientId     String   @map("client_id")
+  userId       String   @map("user_id")
+  redirectUri  String   @map("redirect_uri")
+  scope        String
+  codeChallenge String? @map("code_challenge")
+  codeChallengeMethod String? @map("code_challenge_method")
+  expiresAt    DateTime @map("expires_at")
+  used         Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("authorization_codes")
+}
+
+model Token {
+  id           String   @id @default(uuid())
+  accessToken  String   @unique @map("access_token")
+  refreshToken String?  @unique @map("refresh_token")
+  clientId     String   @map("client_id")
+  userId       String   @map("user_id")
+  scope        String
+  expiresAt    DateTime @map("expires_at")
+  revoked      Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("tokens")
+}
