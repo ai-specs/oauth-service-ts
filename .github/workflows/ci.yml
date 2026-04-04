@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: oauth-service-ts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: oauth-service-ts
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: oauth-service-ts
+        run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: oauth-service-ts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: oauth-service-ts
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: oauth-service-ts
+        run: npm run prisma:generate
+
+      - name: Build TypeScript
+        working-directory: oauth-service-ts
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: oauth-service-ts/dist
+          retention-days: 1
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: oauth_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: oauth-service-ts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: oauth-service-ts
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: oauth-service-ts
+        run: npm run prisma:generate
+
+      - name: Run tests with coverage
+        working-directory: oauth-service-ts
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/oauth_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-ci
+          JWT_PUBLIC_KEY: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0Z3VS5JJcds3xfn/ygWy
+            3zK3VLzM9LZh1tVWxKxKqD3bD9E0KxH8N5K3vF3s6cV9Q2s9B9pQzH2xZ5F1s6cV
+            3wIDAQAB
+            -----END PUBLIC KEY-----
+          JWT_PRIVATE_KEY: |
+            -----BEGIN PRIVATE KEY-----
+            MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDRndVLkklx2zfF
+            +f/KBbLfMrdVvMz0tmHW1VbErEaoPdsP0TQrEfw3kre8XezpxX1Daz0H2lDMfbFn
+            kXWzxXfAgMBAAECggEAP9z3P1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R
+            5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1
+            R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R
+            5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1
+            R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R
+            5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1
+            R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R
+            5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1
+            R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R
+            5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1R3R5J1
+            -----END PRIVATE KEY-----
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: oauth-service-ts/coverage
+          retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: oauth-service-ts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: oauth-service-ts
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: oauth-service-ts
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: oauth-service-ts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: oauth-service-ts
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: oauth-service-ts
+        run: npm run prisma:generate
+
+      - name: TypeScript type check
+        working-directory: oauth-service-ts
+        run: npx tsc --noEmit
