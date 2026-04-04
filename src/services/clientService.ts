@@ -1,7 +1,7 @@
 import prisma from '../utils/database';
 import bcrypt from 'bcrypt';
 import { generateClientId, generateClientSecret } from '../utils/crypto';
-import { badRequest, notFound, conflict } from '../utils/errors';
+import { notFound } from '../utils/errors';
 import { CreateClientRequest } from '../utils/validation';
 
 const SALT_ROUNDS = 12;
@@ -40,8 +40,8 @@ export const createClient = async (data: CreateClientRequest): Promise<ClientWit
     name: client.name,
     clientId: client.clientId,
     clientSecret,
-    redirectUris: client.redirectUris as string[],
-    scopes: client.scopes as string[],
+    redirectUris: client.redirectUris,
+    scopes: client.scopes,
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
   };
@@ -60,8 +60,8 @@ export const getClient = async (clientId: string): Promise<ClientData | null> =>
     id: client.id,
     name: client.name,
     clientId: client.clientId,
-    redirectUris: client.redirectUris as string[],
-    scopes: client.scopes as string[],
+    redirectUris: client.redirectUris,
+    scopes: client.scopes,
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
   };
@@ -80,8 +80,8 @@ export const getClientById = async (id: string): Promise<ClientData | null> => {
     id: client.id,
     name: client.name,
     clientId: client.clientId,
-    redirectUris: client.redirectUris as string[],
-    scopes: client.scopes as string[],
+    redirectUris: client.redirectUris,
+    scopes: client.scopes,
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
   };
@@ -105,8 +105,8 @@ export const validateClient = async (clientId: string, clientSecret: string): Pr
     id: client.id,
     name: client.name,
     clientId: client.clientId,
-    redirectUris: client.redirectUris as string[],
-    scopes: client.scopes as string[],
+    redirectUris: client.redirectUris,
+    scopes: client.scopes,
     createdAt: client.createdAt,
     updatedAt: client.updatedAt,
   };

@@ -9,25 +9,15 @@ import {
   TokenResponse,
   IntrospectionResponse,
 } from '../services/oauthService';
-import { validateClient, ClientData } from '../services/clientService';
+import { validateClient, ClientData, getClient } from '../services/clientService';
 import {
   AuthorizationRequestSchema,
   TokenRequestSchema,
   TokenIntrospectRequestSchema,
   TokenRevokeRequestSchema,
 } from '../utils/validation';
-import { badRequest, unauthorized, HttpError } from '../utils/errors';
+import { badRequest, unauthorized } from '../utils/errors';
 import { getBasicAuthCredentials } from '../utils/crypto';
-
-interface AuthorizeQuery {
-  response_type: string;
-  client_id: string;
-  redirect_uri: string;
-  scope?: string;
-  state?: string;
-  code_challenge?: string;
-  code_challenge_method?: 'plain' | 'S256';
-}
 
 interface TokenRequestBody {
   grant_type: 'authorization_code' | 'client_credentials' | 'refresh_token';
@@ -40,25 +30,8 @@ interface TokenRequestBody {
   scope?: string;
 }
 
-interface IntrospectRequestBody {
-  token: string;
-  token_type_hint?: 'access_token' | 'refresh_token';
-  client_id?: string;
-}
-
-interface RevokeRequestBody {
-  token: string;
-  token_type_hint?: 'access_token' | 'refresh_token';
-  client_id?: string;
-}
-
-// Extended request with authenticated client
-interface AuthenticatedRequest extends Request {
-  client?: ClientData;
-}
-
 export const authorize = async (
-  req: Request<object, object, object, AuthorizeQuery>,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -70,13 +43,14 @@ export const authorize = async (
 
     const { client_id, redirect_uri, scope, state, code_challenge, code_challenge_method } = validationResult.data;
 
-    const client = await validateClient(client_id, '');
+    let client = await validateClient(client_id, '');
     if (!client) {
       // For public clients, we don't validate client_secret
       const publicClient = await getClient(client_id);
       if (!publicClient) {
         throw unauthorized('Invalid client', 'INVALID_CLIENT');
       }
+      client = publicClient;
     }
 
     // In a real implementation, this would redirect to a login page
@@ -84,7 +58,7 @@ export const authorize = async (
     const userId = 'mock_user_123';
 
     const code = await createAuthorizationCode(
-      client || (await getClient(client_id))!,
+      client,
       userId,
       redirect_uri,
       scope || '',
@@ -104,12 +78,6 @@ export const authorize = async (
   }
 };
 
-// Helper to get client (public clients don't need secret)
-const getClient = async (clientId: string): Promise<ClientData | null> => {
-  const { getClient } = await import('../services/clientService');
-  return getClient(clientId);
-};
-
 export const token = async (
   req: Request,
   res: Response<TokenResponse>,
@@ -118,8 +86,10 @@ export const token = async (
   try {
     // Get client credentials from basic auth or body
     const basicAuth = getBasicAuthCredentials(req);
-    const clientId = basicAuth?.clientId || req.body.client_id;
-    const clientSecret = basicAuth?.clientSecret || req.body.client_secret;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    const body = req.body as TokenRequestBody;
+    const clientId = basicAuth?.clientId ?? body.client_id;
+    const clientSecret = basicAuth?.clientSecret ?? body.client_secret;
 
     if (!clientId) {
       throw unauthorized('Missing client_id', 'INVALID_CLIENT');
@@ -200,7 +170,8 @@ export const introspect = async (
   try {
     // Get client credentials
     const basicAuth = getBasicAuthCredentials(req);
-    const clientId = basicAuth?.clientId || req.body.client_id;
+    const body = req.body as { token: string; token_type_hint?: string; client_id?: string };
+    const clientId = basicAuth?.clientId ?? body.client_id;
     const clientSecret = basicAuth?.clientSecret;
 
     if (!clientId) {
@@ -240,7 +211,8 @@ export const revoke = async (
   try {
     // Get client credentials
     const basicAuth = getBasicAuthCredentials(req);
-    const clientId = basicAuth?.clientId || req.body.client_id;
+    const body = req.body as { token: string; token_type_hint?: string; client_id?: string };
+    const clientId = basicAuth?.clientId ?? body.client_id;
     const clientSecret = basicAuth?.clientSecret;
 
     if (!clientId) {

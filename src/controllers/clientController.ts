@@ -3,14 +3,8 @@ import { createClient, getClientById, deleteClient, ClientWithSecret } from '../
 import { CreateClientSchema } from '../utils/validation';
 import { badRequest, HttpError } from '../utils/errors';
 
-interface CreateClientRequestBody {
-  name: string;
-  redirect_uris: string[];
-  scopes: string[];
-}
-
 export const registerClient = async (
-  req: Request<object, ClientWithSecret, CreateClientRequestBody>,
+  req: Request,
   res: Response<ClientWithSecret>,
   next: NextFunction
 ): Promise<void> => {
@@ -28,7 +22,7 @@ export const registerClient = async (
 };
 
 export const getClient = async (
-  req: Request<{ id: string }>,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -47,7 +41,7 @@ export const getClient = async (
 };
 
 export const removeClient = async (
-  req: Request<{ id: string }>,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {

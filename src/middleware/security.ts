@@ -39,6 +39,7 @@ export const securityMiddleware = [
 
 // Request logging middleware
 export const requestLogger = (req: Request, _res: Response, next: NextFunction): void => {
+  // eslint-disable-next-line no-console
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 };

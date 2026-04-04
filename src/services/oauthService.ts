@@ -1,31 +1,9 @@
 import prisma from '../utils/database';
 import redisClient from '../utils/redis';
 import { generateAuthorizationCode, generateAccessToken, generateRefreshToken } from '../utils/crypto';
-import { config } from '../utils/config';
-import { badRequest, unauthorized } from '../utils/errors';
+import { badRequest } from '../utils/errors';
 import { ClientData, validateRedirectUri, validateScopes } from './clientService';
-import jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
-
-interface AuthorizationCodeData {
-  code: string;
-  clientId: string;
-  userId: string;
-  redirectUri: string;
-  scope: string;
-  codeChallenge?: string;
-  codeChallengeMethod?: 'plain' | 'S256';
-  expiresAt: Date;
-}
-
-interface TokenData {
-  accessToken: string;
-  refreshToken?: string;
-  clientId: string;
-  userId: string;
-  scope: string;
-  expiresAt: Date;
-}
 
 export interface TokenResponse {
   access_token: string;
@@ -46,7 +24,6 @@ export interface IntrospectionResponse {
 
 const AUTHORIZATION_CODE_EXPIRATION_MINUTES = 10;
 const ACCESS_TOKEN_EXPIRATION_SECONDS = 3600; // 1 hour
-const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
 
 const TOKEN_BLACKLIST_PREFIX = 'blacklisted_token:';
 
@@ -123,7 +100,6 @@ export const exchangeAuthorizationCode = async (
     if (!codeVerifier) {
       throw badRequest('code_verifier required for PKCE', 'INVALID_GRANT');
     }
-    const method = authCode.codeChallengeMethod || 'S256';
     const expectedChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
     if (expectedChallenge !== authCode.codeChallenge) {
       throw badRequest('Invalid code_verifier', 'INVALID_GRANT');

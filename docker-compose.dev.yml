@@ -26,7 +26,7 @@ services:
       - oauth-network
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     ports:
       - "5432:5432"
     environment:
@@ -44,7 +44,7 @@ services:
       - oauth-network
 
   redis:
-    image: redis:7-alpine
+    image: redis:alpine
     ports:
       - "6379:6379"
     volumes:
