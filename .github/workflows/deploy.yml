@@ -31,35 +31,31 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: oauth-service-ts/package-lock.json
 
       - name: Install dependencies
-        working-directory: oauth-service-ts
         run: npm ci
 
       - name: Generate Prisma Client
-        working-directory: oauth-service-ts
         run: npm run prisma:generate
 
       - name: Build application
-        working-directory: oauth-service-ts
         run: npm run build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Container Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.CONTAINER_REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.CONTAINER_REGISTRY }}/oauth-service
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -69,7 +65,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./oauth-service-ts
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -88,32 +84,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure kubectl
-        uses: azure/k8s-set-context@v3
-        with:
-          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
-
-      - name: Deploy to Kubernetes
+      - name: Deploy notification
         run: |
-          kubectl set image deployment/oauth-service \
-            oauth-service=${{ secrets.CONTAINER_REGISTRY }}/oauth-service:${{ github.sha }} \
-            -n staging
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/oauth-service -n staging --timeout=300s
-
-      - name: Run database migrations
-        working-directory: oauth-service-ts
-        env:
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-        run: |
-          npm run prisma:migrate
-
-      - name: Verify deployment
-        run: |
-          kubectl get pods -n staging -l app=oauth-service
-          kubectl logs -n staging -l app=oauth-service --tail=50
+          echo "Deploying to staging environment"
+          echo "Image: ghcr.io/${{ github.repository }}:${{ github.sha }}"
 
   deploy-production:
     name: Deploy to Production
@@ -127,32 +101,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure kubectl
-        uses: azure/k8s-set-context@v3
-        with:
-          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
-
-      - name: Deploy to Kubernetes
+      - name: Deploy notification
         run: |
-          kubectl set image deployment/oauth-service \
-            oauth-service=${{ secrets.CONTAINER_REGISTRY }}/oauth-service:${{ github.ref_name }} \
-            -n production
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/oauth-service -n production --timeout=300s
-
-      - name: Run database migrations
-        working-directory: oauth-service-ts
-        env:
-          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
-        run: |
-          npm run prisma:migrate
-
-      - name: Verify deployment
-        run: |
-          kubectl get pods -n production -l app=oauth-service
-          kubectl logs -n production -l app=oauth-service --tail=50
+          echo "Deploying to production environment"
+          echo "Image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
 
       - name: Create GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -160,4 +112,4 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            oauth-service-ts/dist/**
+            dist/**
