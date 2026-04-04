@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Success - OAuth Service</title>
+  <link rel="stylesheet" href="/css/success.css">
+</head>
+<body>
+  <div class="container">
+    <div class="success-card">
+      <div class="success-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h1><%= title || 'Success' %></h1>
+      <p class="success-message"><%= message %></p>
+
+      <% if (tokenInfo) { %>
+      <div class="token-info">
+        <h3>Token Details</h3>
+        <div class="token-item">
+          <span class="token-label">Access Token:</span>
+          <code class="token-value"><%= tokenInfo.accessToken %></code>
+        </div>
+        <% if (tokenInfo.refreshToken) { %>
+        <div class="token-item">
+          <span class="token-label">Refresh Token:</span>
+          <code class="token-value"><%= tokenInfo.refreshToken %></code>
+        </div>
+        <% } %>
+        <div class="token-item">
+          <span class="token-label">Expires In:</span>
+          <span class="token-value"><%= tokenInfo.expiresIn %> seconds</span>
+        </div>
+        <div class="token-item">
+          <span class="token-label">Token Type:</span>
+          <span class="token-value"><%= tokenInfo.tokenType || 'Bearer' %></span>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (redirectUrl) { %>
+      <div class="redirect-info">
+        <p>You will be redirected shortly...</p>
+        <a href="<%= redirectUrl %>" class="btn btn-continue">Continue</a>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (autoRedirect && redirectUrl) { %>
+  <script>
+    setTimeout(function() {
+      window.location.href = '<%= redirectUrl %>';
+    }, <%= redirectDelay || 3000 %>);
+  </script>
+  <% } %>
+</body>
+</html>
