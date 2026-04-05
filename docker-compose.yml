@@ -15,6 +15,7 @@ services:
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
       - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - PRISMA_QUERY_ENGINE_BINARY=/app/node_modules/.prisma/client/libquery_engine-linux-musl-arm64-openssl-3.0.x.so.node
     depends_on:
       postgres:
         condition: service_healthy

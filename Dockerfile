@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -19,17 +19,14 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
-# Production stage - use debian-slim for better Prisma compatibility
-FROM node:20-slim AS production
+# Production stage
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 --gid 1001 nodejs
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs
 
 # Copy package files and install production dependencies
 COPY package*.json ./
