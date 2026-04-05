@@ -16,6 +16,10 @@ on:
           - staging
           - production
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push:
     name: Build and Push Docker Image
